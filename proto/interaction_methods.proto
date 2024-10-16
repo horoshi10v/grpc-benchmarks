@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package interaction;
+option go_package = ".;interaction";
+
+// Сервіс для методів синхронної та асинхронної взаємодії
+service SyncAsyncService {
+  // Синхронний метод запит-відповідь
+  rpc SynchronousMethod (Request) returns (Response) {}
+
+  // Асинхронний метод запит-відповідь (емуляція асинхронності)
+  rpc AsynchronousMethod (Request) returns (AsyncResponse) {}
+}
+
+// Сервіс для методів публікації-підписки
+service PubSubService {
+  // Метод публікації повідомлення
+  rpc Publish (PubSubMessage) returns (PubSubAck) {}
+
+  // Метод підписки на повідомлення (серверний стрімінг)
+  rpc Subscribe (SubscriptionRequest) returns (stream PubSubMessage) {}
+}
+
+// Сервіс для взаємодії через брокери повідомлень
+service BrokerService {
+  // Метод відправки повідомлення в брокер
+  rpc SendToBroker (BrokerMessage) returns (BrokerAck) {}
+
+  // Метод отримання повідомлення з брокера (серверний стрімінг)
+  rpc ReceiveFromBroker (BrokerSubscription) returns (stream BrokerMessage) {}
+}
+
+// Повідомлення для запитів та відповідей
+message Request {
+  int32 id = 1;
+  string payload = 2;
+}
+
+message Response {
+  int32 id = 1;
+  string result = 2;
+}
+
+// Повідомлення для асинхронних відповідей
+message AsyncResponse {
+  int32 id = 1;
+  string status = 2;
+}
+
+// Повідомлення для публікації-підписки
+message PubSubMessage {
+  string topic = 1;
+  string content = 2;
+}
+
+message SubscriptionRequest {
+  string topic = 1;
+}
+
+message PubSubAck {
+  string status = 1;
+}
+
+// Повідомлення для брокера повідомлень
+message BrokerMessage {
+  string queue = 1;
+  string content = 2;
+}
+
+message BrokerSubscription {
+  string queue = 1;
+}
+
+message BrokerAck {
+  string status = 1;
+}
