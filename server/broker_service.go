@@ -1,10 +1,10 @@
-package server
+package main
 
 import (
 	"context"
 	"log"
 
-	pb "github.com/horoshi10v/grpc-benchmarks/proto
+	pb "github.com/horoshi10v/grpc-benchmarks/proto"
 
 	"github.com/Shopify/sarama"
 )

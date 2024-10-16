@@ -1,11 +1,11 @@
 // server/kafka_consumer.go
-package server
+package main
 
 import (
 	"log"
 
 	"github.com/Shopify/sarama"
-	pb "github.com/horoshi10v/grpc-benchmarks/proto
+	pb "github.com/horoshi10v/grpc-benchmarks/proto"
 )
 
 // Ініціалізація Kafka консюмера

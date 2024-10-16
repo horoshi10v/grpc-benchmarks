@@ -1,5 +1,5 @@
 // server/kafka_producer.go
-package server
+package main
 
 import (
 	"log"

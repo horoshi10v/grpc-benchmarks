@@ -1,12 +1,12 @@
 // server/pubsub_service.go
-package server
+package main
 
 import (
 	"context"
 	"log"
 	"sync"
 
-	pb "github.com/horoshi10v/grpc-benchmarks/proto
+	pb "github.com/horoshi10v/grpc-benchmarks/proto"
 )
 
 type PubSubServiceServer struct {

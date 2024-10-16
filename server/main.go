@@ -12,18 +12,16 @@ import (
 
 	// Імпортуємо згенерований код з .proto файлу
 	pb "github.com/horoshi10v/grpc-benchmarks/proto"
-	// Імпортуємо наші сервіси
-	"github.com/horoshi10v/grpc-benchmarks/server"
 )
 
 func main() {
 	// Налаштування Kafka
 	brokers := []string{"localhost:9092"}
-	producer := server.InitializeKafkaProducer(brokers)
+	producer := InitializeKafkaProducer(brokers)
 	defer producer.Close()
 
 	consumerGroupID := "grpc-broker-service-group"
-	consumer := server.InitializeKafkaConsumer(brokers, consumerGroupID)
+	consumer := InitializeKafkaConsumer(brokers, consumerGroupID)
 	defer consumer.Close()
 
 	// Створення gRPC сервера
@@ -34,9 +32,9 @@ func main() {
 	grpcServer := grpc.NewServer()
 
 	// Реєстрація сервісів
-	pb.RegisterSyncAsyncServiceServer(grpcServer, &server.SyncAsyncServiceServer{})
-	pb.RegisterPubSubServiceServer(grpcServer, server.NewPubSubServiceServer())
-	pb.RegisterBrokerServiceServer(grpcServer, &server.BrokerServiceServer{
+	pb.RegisterSyncAsyncServiceServer(grpcServer, &SyncAsyncServiceServer{})
+	pb.RegisterPubSubServiceServer(grpcServer, NewPubSubServiceServer())
+	pb.RegisterBrokerServiceServer(grpcServer, &BrokerServiceServer{
 		KafkaProducer: producer,
 		KafkaConsumer: consumer,
 	})
