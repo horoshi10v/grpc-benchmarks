@@ -12,7 +12,7 @@ import (
 )
 
 func RunBrokerPublisher(queue, message string) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -36,7 +36,7 @@ func RunBrokerPublisher(queue, message string) {
 }
 
 func RunBrokerSubscriber(queue string) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}

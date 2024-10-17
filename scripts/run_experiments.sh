@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Параметри експериментів
-SERVER_ADDRESS="localhost:50051"
+SERVER_ADDRESS="localhost:50052"
 EXPERIMENTS_DIR="../results"
 LOG_DIR="$EXPERIMENTS_DIR/logs"
 METRICS_DIR="$EXPERIMENTS_DIR/metrics"

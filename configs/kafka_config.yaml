@@ -1,0 +1,18 @@
+# kafka_config.yaml
+
+# Список брокерів Kafka
+brokers:
+  - "localhost:9092"
+
+# Налаштування продюсера Kafka
+producer:
+  topic: "grpc_producer_topic"
+
+# Налаштування консюмера Kafka
+consumer:
+  topic: "grpc_consumer_topic"
+  group_id: "grpc_consumer_group"
+
+# Налаштування безпеки (якщо необхідно)
+security:
+  enabled: false

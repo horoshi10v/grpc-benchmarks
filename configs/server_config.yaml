@@ -1,0 +1,5 @@
+# server_config.yaml
+
+server:
+  host: "localhost"
+  port: 50052

@@ -20,7 +20,7 @@ import (
 
 func main() {
 	outputFile := flag.String("output", "metrics.csv", "Output CSV file for metrics")
-	serverAddress := flag.String("server", "localhost:50051", "gRPC server address")
+	serverAddress := flag.String("server", "localhost:50052", "gRPC server address")
 	mode := flag.String("mode", "sync", "Mode: sync | async | pubsub | broker")
 	action := flag.String("action", "", "Action: publish | subscribe (for pubsub and broker modes)")
 	topicOrQueue := flag.String("topic", "", "Topic or Queue name (for pubsub and broker modes)")
@@ -228,6 +228,7 @@ func collectPubSubMetrics(client pb.PubSubServiceClient, topic string, writer *c
 }
 
 func collectBrokerMetrics(client pb.BrokerServiceClient, queue string, writer *csv.Writer) {
+	log.Println("Starting broker metrics collection")
 	ctx := context.Background()
 	subscription := &pb.BrokerSubscription{
 		Queue: queue,
@@ -237,6 +238,8 @@ func collectBrokerMetrics(client pb.BrokerServiceClient, queue string, writer *c
 	if err != nil {
 		log.Fatalf("Could not subscribe to broker: %v", err)
 	}
+
+	log.Println("Subscribed to broker successfully")
 
 	for {
 		startTime := time.Now()

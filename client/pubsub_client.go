@@ -12,7 +12,7 @@ import (
 )
 
 func RunPubSubPublisher(topic, message string) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
@@ -36,7 +36,7 @@ func RunPubSubPublisher(topic, message string) {
 }
 
 func RunPubSubSubscriber(topic string) {
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("localhost:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Did not connect: %v", err)
 	}
