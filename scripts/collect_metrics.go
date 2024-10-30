@@ -26,6 +26,7 @@ func main() {
 	topicOrQueue := flag.String("topic", "", "Topic or Queue name (for pubsub and broker modes)")
 	requests := flag.Int("requests", 100, "Number of requests")
 	concurrency := flag.Int("concurrency", 1, "Number of concurrent goroutines")
+	message := flag.String("message", "Hello", "Message to send")
 	flag.Parse()
 
 	conn, err := grpc.Dial(*serverAddress, grpc.WithInsecure())
@@ -56,7 +57,7 @@ func main() {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
-				collectSyncMetrics(client, id, requestsPerGoroutine, writer)
+				collectSyncMetrics(client, id, requestsPerGoroutine, *message, writer)
 			}(i)
 		}
 	case "async":
@@ -65,18 +66,22 @@ func main() {
 			wg.Add(1)
 			go func(id int) {
 				defer wg.Done()
-				collectAsyncMetrics(client, id, requestsPerGoroutine, writer)
+				collectAsyncMetrics(client, id, requestsPerGoroutine, *message, writer)
 			}(i)
 		}
 	case "pubsub":
 		if *action == "subscribe" {
 			client := pb.NewPubSubServiceClient(conn)
 			collectPubSubMetrics(client, *topicOrQueue, writer)
+		} else {
+			log.Fatalf("Invalid action for pubsub mode: %s", *action)
 		}
 	case "broker":
 		if *action == "subscribe" {
 			client := pb.NewBrokerServiceClient(conn)
 			collectBrokerMetrics(client, *topicOrQueue, writer)
+		} else {
+			log.Fatalf("Invalid action for broker mode: %s", *action)
 		}
 	default:
 		log.Fatalf("Invalid mode: %s", *mode)
@@ -85,7 +90,7 @@ func main() {
 	wg.Wait()
 }
 
-func collectSyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, writer *csv.Writer) {
+func collectSyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, message string, writer *csv.Writer) {
 	for i := 0; i < numRequests; i++ {
 		startTime := time.Now()
 
@@ -94,7 +99,7 @@ func collectSyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, w
 
 		request := &pb.Request{
 			Id:      int32(id*numRequests + i),
-			Payload: fmt.Sprintf("Request %d from goroutine %d", i, id),
+			Payload: fmt.Sprintf("%s %d from goroutine %d", message, i, id),
 		}
 
 		_, err := client.SynchronousMethod(ctx, request)
@@ -126,13 +131,10 @@ func collectSyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, w
 		if err != nil {
 			log.Printf("Error in synchronous request: %v", err)
 		}
-
-		// Опціональна затримка між запитами
-		// time.Sleep(10 * time.Millisecond)
 	}
 }
 
-func collectAsyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, writer *csv.Writer) {
+func collectAsyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, message string, writer *csv.Writer) {
 	for i := 0; i < numRequests; i++ {
 		startTime := time.Now()
 
@@ -141,7 +143,7 @@ func collectAsyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, 
 
 		request := &pb.Request{
 			Id:      int32(id*numRequests + i),
-			Payload: fmt.Sprintf("Request %d from goroutine %d", i, id),
+			Payload: fmt.Sprintf("%s %d from goroutine %d", message, i, id),
 		}
 
 		_, err := client.AsynchronousMethod(ctx, request)
@@ -173,9 +175,6 @@ func collectAsyncMetrics(client pb.SyncAsyncServiceClient, id, numRequests int, 
 		if err != nil {
 			log.Printf("Error in asynchronous request: %v", err)
 		}
-
-		// Опціональна затримка між запитами
-		// time.Sleep(10 * time.Millisecond)
 	}
 }
 

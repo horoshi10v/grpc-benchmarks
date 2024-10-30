@@ -10,6 +10,21 @@ METRICS_DIR="$EXPERIMENTS_DIR/metrics"
 mkdir -p $LOG_DIR
 mkdir -p $METRICS_DIR
 
+# Функція для генерації повідомлень різного розміру
+generate_message() {
+    SIZE=$1
+    if [ "$SIZE" == "small" ]; then
+        MESSAGE="Hello"
+    elif [ "$SIZE" == "medium" ]; then
+        MESSAGE=$(head /dev/urandom | LC_CTYPE=C tr -dc 'A-Za-z0-9' | head -c 1024)
+    elif [ "$SIZE" == "large" ]; then
+        MESSAGE=$(head /dev/urandom | LC_CTYPE=C tr -dc 'A-Za-z0-9' | head -c 1048576)
+    else
+        MESSAGE="Default Message"
+    fi
+    echo "$MESSAGE"
+}
+
 # Функція для запуску сервера
 start_server() {
     echo "Starting server..."
@@ -33,16 +48,18 @@ run_client() {
     MODE=$1
     ACTION=$2
     TOPIC_OR_QUEUE=$3
-    MESSAGE=$4
+    MESSAGE_SIZE=$4
     OUTPUT_FILE=$5
     NUM_REQUESTS=$6
     CONCURRENCY=$7
 
-    echo "Running client in mode: $MODE, action: $ACTION, topic/queue: $TOPIC_OR_QUEUE, requests: $NUM_REQUESTS, concurrency: $CONCURRENCY"
+    echo "Running client in mode: $MODE, action: $ACTION, topic/queue: $TOPIC_OR_QUEUE, message size: $MESSAGE_SIZE, requests: $NUM_REQUESTS, concurrency: $CONCURRENCY"
+
+    MESSAGE=$(generate_message $MESSAGE_SIZE)
 
     if [ "$MODE" == "sync" ] || [ "$MODE" == "async" ]; then
         # Запускаємо колектор метрик
-        go run collect_metrics.go --mode=$MODE --requests=$NUM_REQUESTS --concurrency=$CONCURRENCY --output=$OUTPUT_FILE > $LOG_DIR/${MODE}_client.log 2>&1
+        go run collect_metrics.go --mode=$MODE --requests=$NUM_REQUESTS --concurrency=$CONCURRENCY --message="$MESSAGE" --output=$OUTPUT_FILE > $LOG_DIR/${MODE}_client.log 2>&1
     elif [ "$MODE" == "pubsub" ] || [ "$MODE" == "broker" ]; then
         if [ "$ACTION" == "publish" ]; then
             for ((i=1; i<=$NUM_REQUESTS; i++)); do
@@ -62,43 +79,46 @@ start_server
 
 # Визначаємо рівні навантаження
 LOAD_LEVELS=("low" "medium" "high")
-REQUESTS=("100" "1000" "10000")
-CONCURRENCIES=("1" "10" "100")
+REQUESTS=("10" "50" "100")
+CONCURRENCIES=("1" "10" "50")
+MESSAGE_SIZES=("small" "medium" "large")
 
-for i in ${!LOAD_LEVELS[@]}; do
-    LOAD=${LOAD_LEVELS[$i]}
-    NUM_REQUESTS=${REQUESTS[$i]}
-    CONCURRENCY=${CONCURRENCIES[$i]}
+for SIZE in "${MESSAGE_SIZES[@]}"; do
+    for i in "${!LOAD_LEVELS[@]}"; do
+        LOAD="${LOAD_LEVELS[$i]}"
+        NUM_REQUESTS=${REQUESTS[$i]}
+        CONCURRENCY=${CONCURRENCIES[$i]}
 
-    echo "Starting experiments with $LOAD load: $NUM_REQUESTS requests, $CONCURRENCY concurrency"
+        echo "Starting experiments with $LOAD load and $SIZE messages: $NUM_REQUESTS requests, $CONCURRENCY concurrency"
 
-    # Синхронний метод
-    run_client "sync" "" "" "" "$METRICS_DIR/sync_${LOAD}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
+        # Синхронний метод
+        run_client "sync" "" "" $SIZE "$METRICS_DIR/sync_${LOAD}_${SIZE}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
 
-    # Асинхронний метод
-    run_client "async" "" "" "" "$METRICS_DIR/async_${LOAD}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
+        # Асинхронний метод
+        run_client "async" "" "" $SIZE "$METRICS_DIR/async_${LOAD}_${SIZE}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
 
-    # Pub/Sub метод
-    run_client "pubsub" "subscribe" "test_topic" "" "$METRICS_DIR/pubsub_${LOAD}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
-    # Даємо час на запуск підписника
-    sleep 2
-    run_client "pubsub" "publish" "test_topic" "Message" "" $NUM_REQUESTS $CONCURRENCY
-    # Зупиняємо підписника
-    if [ ! -z "$CLIENT_PID" ]; then
-        kill $CLIENT_PID
-        wait $CLIENT_PID 2>/dev/null
-    fi
+        # Pub/Sub метод
+        run_client "pubsub" "subscribe" "test_topic" "" "$METRICS_DIR/pubsub_${LOAD}_${SIZE}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
+        # Даємо час на запуск підписника
+        sleep 2
+        run_client "pubsub" "publish" "test_topic" $SIZE "" $NUM_REQUESTS $CONCURRENCY
+        # Зупиняємо підписника
+        if [ ! -z "$CLIENT_PID" ]; then
+            kill $CLIENT_PID
+            wait $CLIENT_PID 2>/dev/null
+        fi
 
-    # Broker метод
-    run_client "broker" "subscribe" "test_queue" "" "$METRICS_DIR/broker_${LOAD}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
-    # Даємо час на запуск підписника
-    sleep 2
-    run_client "broker" "publish" "test_queue" "Message" "" $NUM_REQUESTS $CONCURRENCY
-    # Зупиняємо підписника
-    if [ ! -z "$CLIENT_PID" ]; then
-        kill $CLIENT_PID
-        wait $CLIENT_PID 2>/dev/null
-    fi
+        # Broker метод
+        run_client "broker" "subscribe" "test_queue" "" "$METRICS_DIR/broker_${LOAD}_${SIZE}_metrics.csv" $NUM_REQUESTS $CONCURRENCY
+        # Даємо час на запуск підписника
+        sleep 2
+        run_client "broker" "publish" "test_queue" $SIZE "" $NUM_REQUESTS $CONCURRENCY
+        # Зупиняємо підписника
+        if [ ! -z "$CLIENT_PID" ]; then
+            kill $CLIENT_PID
+            wait $CLIENT_PID 2>/dev/null
+        fi
+    done
 done
 
 # Зупинка серверних процесів
